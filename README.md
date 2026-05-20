@@ -55,3 +55,20 @@ The pipeline maintains a shared state object that accumulates progressively rich
 **Why separate LLM calls per step?**
 
 Each step has a distinct responsibility and a different prompt structure. Separating them gives better debuggability (via LangSmith), allows independent prompt iteration, and avoids the reliability problems that come from asking a single prompt to do too many things at once.
+
+
+## Tech Stack
+
+The tech stack was carefully selected to ensure modularity, scalability, and ease of maintenance. Here's a breakdown of the choices made:
+
+| Component | Choice | Reason |
+|---|---|---|
+| Language | Python 3.12 | Ecosystem maturity for ML/NLP |
+| Package manager | uv | Fast, modern, `pyproject.toml`-based |
+| Orchestration | LangGraph | Stateful pipeline with conditional branching |
+| LLM | LLaMA 3.3 70B via Groq | Fast inference, free tier, open-source |
+| Observability | LangSmith | Trace and debug each LLM call in the pipeline |
+| Scraping | BeautifulSoup | Validated via POC; reliable for consistent HTML structure |
+| Backend | FastAPI | Lightweight, async-ready API layer |
+| Frontend | Streamlit | Rapid dashboard development; no frontend expertise required |
+| Database | Supabase (PostgreSQL) | Managed Postgres with REST API; supports PROD/DEV project separation |
