@@ -1,3 +1,5 @@
+![Status](https://img.shields.io/badge/status-in%20development-yellow)
+
 # Review Radar
 
 > *"We read your Google reviews for you, identify what's hurting your business, and tell you exactly what to do about it."*
