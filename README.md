@@ -24,3 +24,34 @@ The primary user is a small business owner or a small team of 1–3 associates. 
 4. **Aggregates** negative themes across all reviews by frequency and severity
 5. **Generates** specific, context-aware action items for each recurring negative theme
 6. **Presents** everything through a clean Streamlit dashboard for the business owner
+
+## Architecture Overview
+
+The initial architecture was designed to be modular and scalable, allowing for future improvements and integrations. It consists of three main components:
+
+1. **Frontend**: A Streamlit dashboard for the business owner
+2. **Backend**: A FastAPI application for orchestration and API endpoints
+3. **LangGraph Pipeline**: A LangGraph stateful graph for the analysis pipeline
+
+<img width="1672" height="941" alt="Image" src="https://github.com/user-attachments/assets/eab69ed3-1dcd-488e-837c-ea8f4b892bb0" />
+
+## LangGraph Pipeline Design
+
+The analysis pipeline is implemented as a LangGraph stateful graph. Each node is a discrete LangChain step with its own prompt, making each stage independently testable and replaceable.
+
+State should contain the following information:
+
+```
+State: { reviews, aspects, sentiments, themes, suggestions }
+```
+
+<img width="1693" height="929" alt="Image" src="https://github.com/user-attachments/assets/10a38c58-f1e7-4d7a-b944-5905889a6808" />
+
+
+**Why LangGraph over a simple LCEL chain?**
+
+The pipeline maintains a shared state object that accumulates progressively richer data across nodes. LangGraph's state management handles this cleanly. It also enables conditional branching, for example, skipping the suggestion generation step entirely if no negative aspects are found in a review set.
+
+**Why separate LLM calls per step?**
+
+Each step has a distinct responsibility and a different prompt structure. Separating them gives better debuggability (via LangSmith), allows independent prompt iteration, and avoids the reliability problems that come from asking a single prompt to do too many things at once.
