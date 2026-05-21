@@ -54,18 +54,18 @@ JS_SCROLL_LOAD = """
   const sortBtn = document.querySelector('button.AeBiU-LgbsSe, button[data-idom-class*="qpzGs"]');
   if (sortBtn) {
     sortBtn.click();
-    console.log('✅ CLICKED Sort');
+    console.log('CLICKED Sort');
   }
 
   // 2. Wait → Click "newest" option
   await new Promise(r => setTimeout(r, 800));
-  const newestOption = 
+  const newestOption =
     document.querySelector('[data-value="newest"]') ||
-    Array.from(document.querySelectorAll('[role="menuitem"]')).find(opt => 
+    Array.from(document.querySelectorAll('[role="menuitem"]')).find(opt =>
       opt.textContent.includes('Newest') || opt.textContent.includes('Neueste'));
   if (newestOption) {
     newestOption.click();
-    console.log('✅ Selected Newest');
+    console.log('Selected Newest');
   }
 
   await new Promise(r => setTimeout(r, 3000));
@@ -85,21 +85,21 @@ JS_SCROLL_LOAD = """
 
   let prevCount = 0;
   let noChangeCount = 0;
-  const MAX_NO_CHANGE = 15;  // ← era 5, agora 15 (tolera throttle do Google)
-  const MAX_SCROLLS = 1000;  // ← era 500, aumentar para mais reviews
+  const MAX_NO_CHANGE = 15;
+  const MAX_SCROLLS = 1000;
 
   for (let i = 0; i < MAX_SCROLLS; i++) {
     scrollReviews();
-    await new Promise(r => setTimeout(r, 2000));  // ← era 1500ms, agora 2000ms
+    await new Promise(r => setTimeout(r, 2000));
 
     const current = getReviewCount();
-    console.log(`📈 Reviews no DOM: ${current}`);
+    console.log(`Reviews no DOM: ${current}`);
 
     if (current === prevCount) {
       noChangeCount++;
-      console.log(`⏳ Sem novos reviews (${noChangeCount}/${MAX_NO_CHANGE})`);
+      console.log(`No new reviews (${noChangeCount}/${MAX_NO_CHANGE})`);
       if (noChangeCount >= MAX_NO_CHANGE) {
-        console.log(`✅ Scroll finalizado: ${current} reviews carregados`);
+        console.log(`Scroll finished: ${current} reviews loaded`);
         break;
       }
     } else {
@@ -109,6 +109,6 @@ JS_SCROLL_LOAD = """
   }
 
   document.body.setAttribute('data-crawl-ready', '1');
-  console.log('✅ data-crawl-ready = 1');
+  console.log('data-crawl-ready = 1');
 })();
 """
