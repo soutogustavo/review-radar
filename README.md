@@ -70,7 +70,7 @@ The tech stack was carefully selected to ensure modularity, scalability, and eas
 | Orchestration | LangGraph | Stateful pipeline with conditional branching |
 | LLM | LLaMA 3.3 70B via Groq | Fast inference, free tier, open-source |
 | Observability | LangSmith | Trace and debug each LLM call in the pipeline |
-| Scraping | BeautifulSoup | Validated via POC; reliable for consistent HTML structure |
+| Scraping | Crawl4AI + BeautifulSoup | Validated via POC; reliable for consistent HTML structure |
 | Backend | FastAPI | Lightweight, async-ready API layer |
 | Frontend | Streamlit | Rapid dashboard development; no frontend expertise required |
 | Database | Supabase (PostgreSQL) | Managed Postgres with REST API; supports PROD/DEV project separation |
