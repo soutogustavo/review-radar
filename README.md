@@ -74,3 +74,31 @@ The tech stack was carefully selected to ensure modularity, scalability, and eas
 | Backend | FastAPI | Lightweight, async-ready API layer |
 | Frontend | Streamlit | Rapid dashboard development; no frontend expertise required |
 | Database | Supabase (PostgreSQL) | Managed Postgres with REST API; supports PROD/DEV project separation |
+
+
+## Scope and Limitations (v1)
+
+**In scope:**
+- Google Maps reviews only
+- Single business per pipeline run
+- Review scraping, aspect extraction, theme aggregation, and suggestion generation
+- Read-only Streamlit dashboard with basic status tracking (pending / in progress / resolved)
+
+**Out of scope (v1):**
+- Multi-tenancy (multiple businesses in a single account)
+- Other review sources (Facebook, Instagram, TripAdvisor, Reddit)
+- Revenue impact estimation
+- Automated re-scraping / scheduling
+- User authentication
+
+**Legal note:** Scraping Google Maps is not explicitly permitted under Google's Terms of Service. This project is intended for educational and portfolio purposes. For a production deployment, the [Google Places API](https://developers.google.com/maps/documentation/places/web-service/overview) is the compliant alternative.
+
+
+## Future Work
+
+- **Additional data sources** — TripAdvisor, Facebook reviews, Reddit mentions
+- **Scheduled scraping** — automated weekly or daily review collection
+- **Multi-tenancy** — support multiple businesses under a single dashboard
+- **Trend tracking** — detect whether a resolved theme reappears in new reviews
+- **MCP integration** — allow the system to push suggestions directly to task management tools (Notion, Trello)
+- **Google Places API** — replace scraping with a compliant, stable data source
