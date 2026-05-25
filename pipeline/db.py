@@ -2,7 +2,7 @@
 import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
-from pipeline.models import ClientSource
+from pipeline.models import ClientSource, PipelineRun
 
 load_dotenv()
 
@@ -32,3 +32,19 @@ def load_active_sources() -> list[ClientSource]:
         rows.append(ClientSource(**row))
 
     return [ClientSource(**row) for row in result.data]
+
+
+def save_pipeline_run(run: PipelineRun) -> None:
+    db_client = get_client()
+
+    db_client.table("rr_pipeline_runs").insert({
+        "client_id":         run.client_id,
+        "source_id":         run.source_id,
+        "status":            run.status,
+        "started_at":        run.started_at.isoformat(),
+        "finished_at":       run.finished_at.isoformat(),
+        "reviews_extracted": run.reviews_extracted,
+        "anomaly_flag":      run.anomaly_flag,
+        "anomaly_reason":    run.anomaly_reason,
+        "error_message":     run.error_message,
+    }).execute()

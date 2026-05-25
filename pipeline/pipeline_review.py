@@ -2,6 +2,7 @@
 
 import logging
 import asyncio
+from datetime import datetime
 from prefect import flow
 
 from scrapers.google_maps import scrap_google_maps_reviews
@@ -9,6 +10,7 @@ from scrapers.google_maps_utils import parse_maps_reviews_from_html
 
 from pipeline.db import load_active_sources
 from pipeline.models import ClientSource
+from pipeline.tasks import save_run
 
 logging.root.setLevel(logging.INFO)
 logger = logging.getLogger("Pipeline")
@@ -27,6 +29,8 @@ def review_pipeline(
         list[dict]: List of reviews
     """
 
+    started_at = datetime.utcnow()
+
     if client.platform == "google_maps":
         scraped_reviews = asyncio.run(
             scrap_google_maps_reviews(
@@ -36,6 +40,13 @@ def review_pipeline(
             )
         )
         reviews = parse_maps_reviews_from_html(html=scraped_reviews.html)
+
+    save_run(
+        run=client,
+        reviews=reviews,
+        anomaly={},
+        started_at=started_at
+    )
 
     return reviews
 

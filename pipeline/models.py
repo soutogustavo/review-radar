@@ -21,7 +21,7 @@ class ClientSource(BaseModel):
 
 class PipelineRun(BaseModel):
     client_id: str
-    source_id: str
+    source_id: int
     status: str
     started_at: datetime
     finished_at: datetime
