@@ -27,7 +27,7 @@ def load_active_sources() -> list[ClientSource]:
 
     rows = []
     for row in result.data:
-        nested = row.pop("rr_clients", {})  # remove o objeto aninhado
+        nested = row.pop("rr_clients", {})
         row["client_name"] = nested.get("client_name")
         rows.append(ClientSource(**row))
 
