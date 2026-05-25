@@ -5,6 +5,7 @@ requires-python = ">=3.12"
 dependencies = [
     "crawl4ai>=0.8.6",
     "prefect>=3.7.1",
+    "supabase>=2.30.0",
 ]
 
 [dependency-groups]
