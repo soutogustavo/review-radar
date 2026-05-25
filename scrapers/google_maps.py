@@ -13,10 +13,10 @@ from scrapers.google_maps_jscodes import (
     JS_ACCEPT_COOKIES,
     JS_SCROLL_LOAD
 )
-from scrapers.google_maps_utils import parse_reviews_from_html
+from scrapers.google_maps_utils import parse_maps_reviews_from_html
 
-logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
-logger = logging.getLogger("GMaps Reviews Scraper")
+logging.root.setLevel(logging.INFO)
+logger = logging.getLogger("Google Maps Scraper")
 
 
 @task
@@ -108,5 +108,5 @@ if __name__ == "__main__":
         show_console_messages=True)
     )
 
-    reviews = parse_reviews_from_html(result.html)
+    reviews = parse_maps_reviews_from_html(result.html)
     logger.info(f"Scraped {len(reviews)} reviews")

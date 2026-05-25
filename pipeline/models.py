@@ -1,3 +1,5 @@
+"""Models for Review Radar Pipeline"""
+
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
@@ -5,6 +7,8 @@ from typing import Optional
 class ScrapeConfig(BaseModel):
     delay_seconds: int = 5
     max_retries: int = 3
+    headless: bool = True
+    show_console_messages: bool = False
 
 class ClientSource(BaseModel):
     source_id: int

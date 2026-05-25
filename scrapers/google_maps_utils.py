@@ -1,16 +1,16 @@
-"""Utils for scraper"""
+"""Utils for google maps scraper"""
 
 import re
 import logging
 from bs4 import BeautifulSoup
 from prefect import task
 
-logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
-logger = logging.getLogger("Utils")
+logging.root.setLevel(logging.INFO)
+logger = logging.getLogger("Google Maps Utils")
 
 
 @task
-def parse_reviews_from_html(html: str) -> list[dict]:
+def parse_maps_reviews_from_html(html: str) -> list[dict]:
     """
     Parse reviews from HTML.
 
@@ -46,5 +46,4 @@ def parse_reviews_from_html(html: str) -> list[dict]:
             "likes":  int(likes_el.get_text(strip=True)) if likes_el else 0,
         })
 
-    logger.info("Parsed %s reviews", len(results))
     return results
