@@ -3,11 +3,13 @@
 import re
 import logging
 from bs4 import BeautifulSoup
+from prefect import task
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("Utils")
 
 
+@task
 def parse_reviews_from_html(html: str) -> list[dict]:
     """
     Parse reviews from HTML.

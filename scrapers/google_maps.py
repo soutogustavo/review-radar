@@ -8,19 +8,21 @@ from crawl4ai import (
     CrawlerRunConfig,
     CacheMode
 )
-from google_maps_jscodes import (
+from prefect import task
+from scrapers.google_maps_jscodes import (
     JS_ACCEPT_COOKIES,
     JS_SCROLL_LOAD
 )
-from google_maps_utils import parse_reviews_from_html
+from scrapers.google_maps_utils import parse_reviews_from_html
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("GMaps Reviews Scraper")
 
 
+@task
 async def scrap_google_maps_reviews(
     url: str, show_console_messages: bool = False,
-    headless: bool = False
+    headless: bool = True
 ) -> str:
     """
     Scrap Google Maps reviews for a given URL.
@@ -100,11 +102,11 @@ async def scrap_google_maps_reviews(
 
 
 if __name__ == "__main__":
-    url_google_reviews = "https://www.google.com/maps/place/...." # Reviews section
+    url_google_reviews = "https://www.google.com/maps/..." # Reviews section
     result = asyncio.run(
         scrap_google_maps_reviews(url=url_google_reviews,
         show_console_messages=True)
     )
 
     reviews = parse_reviews_from_html(result.html)
-    print(reviews)
+    logger.info(f"Scraped {len(reviews)} reviews")
