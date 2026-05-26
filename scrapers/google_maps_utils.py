@@ -39,11 +39,15 @@ def parse_maps_reviews_from_html(html: str) -> list[dict]:
 
         likes_el = review.find("span", class_="pkWtMe")
 
+        author_el = review.find("div", class_="d4r55")
+        author = author_el.get_text(strip=True) if author_el else ""
+
         results.append({
             "review": text_el.get_text(strip=True) if text_el else "",
             "rating": rating,
             "date":   date_el.get_text(strip=True) if date_el else "",
             "likes":  int(likes_el.get_text(strip=True)) if likes_el else 0,
+            "_author_hash_only": author,
         })
 
     return results
