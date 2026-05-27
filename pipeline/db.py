@@ -4,18 +4,25 @@ import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from pipeline.models import ClientSource, PipelineRun
-from scrapers.google_maps_utils import generate_review_hash
 
 load_dotenv()
 
 def get_client() -> Client:
+    """Get clients"""
     url = os.environ["SUPABASE_URL"]
     key = os.environ["SUPABASE_SERVICE_KEY"]
     return create_client(url, key)
 
 
 def load_active_sources() -> list[ClientSource]:
-    """Load all active client sources from database."""
+    """Load all active client sources from database.
+
+    Args:
+        None
+
+    Returns:
+        list[ClientSource]: List of active client sources.
+    """
     db_client = get_client()
 
     result = (
@@ -37,6 +44,15 @@ def load_active_sources() -> list[ClientSource]:
 
 
 def save_pipeline_run(run: PipelineRun) -> None:
+    """Save pipeline run to database
+
+    Args:
+        run (PipelineRun): Pipeline run data
+
+    Returns:
+        None
+    """
+
     db_client = get_client()
 
     db_client.table("rr_pipeline_runs").insert({
@@ -52,30 +68,36 @@ def save_pipeline_run(run: PipelineRun) -> None:
     }).execute()
 
 
-def save_google_maps_reviews(reviews: list[dict], source_id: str, client_id: str) -> dict:
-    """Save google maps reviews to database"""
+def save_google_maps_reviews(
+    reviews: list[dict], source_id: str, client_id: str
+) -> None:
+    """Save google maps reviews to database
+
+    Args:
+        reviews (list[dict]): List of reviews
+        source_id (str): Source ID
+        client_id (str): Client ID
+
+    Returns:
+        None
+    """
 
     rows = []
     db_client = get_client()
 
     for r in reviews:
-        review_hash = generate_review_hash(
-            source_id=source_id,
-            review=r
-        )
         rows.append({
             "source_id":    source_id,
             "client_id":    client_id,
             "review_text":  r["review"],
             "rating":       r["rating"],
-            "review_date":  r["date"],
-            "review_hash":  review_hash,
+            "review_date_raw":  r["date_raw"],
+            "review_date_estimated": r["estimated_date"],
+            "review_date_precision": r["precision"],
+            "review_hash":  r["review_hash"],
             "metadata":     {"likes": r.get("likes", 0)}
         })
 
-    result = (
-        db_client.table("rr_reviews")
+    (db_client.table("rr_reviews")
         .upsert(rows, on_conflict="review_hash")
-        .execute()
-    )
-    return result
+        .execute())

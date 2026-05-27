@@ -41,7 +41,8 @@ def review_pipeline(
         )
 
         reviews = parse_maps_reviews_from_html(
-            html=scraped_reviews.html
+            html=scraped_reviews.html,
+            source_id=client.source_id,
         )
 
         save_google_maps_reviews(
