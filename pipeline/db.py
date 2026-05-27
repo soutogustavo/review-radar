@@ -1,8 +1,10 @@
+"""Database utils for pipeline"""
 
 import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from pipeline.models import ClientSource, PipelineRun
+from scrapers.google_maps_utils import generate_review_hash
 
 load_dotenv()
 
@@ -48,3 +50,32 @@ def save_pipeline_run(run: PipelineRun) -> None:
         "anomaly_reason":    run.anomaly_reason,
         "error_message":     run.error_message,
     }).execute()
+
+
+def save_google_maps_reviews(reviews: list[dict], source_id: str, client_id: str) -> dict:
+    """Save google maps reviews to database"""
+
+    rows = []
+    db_client = get_client()
+
+    for r in reviews:
+        review_hash = generate_review_hash(
+            source_id=source_id,
+            review=r
+        )
+        rows.append({
+            "source_id":    source_id,
+            "client_id":    client_id,
+            "review_text":  r["review"],
+            "rating":       r["rating"],
+            "review_date":  r["date"],
+            "review_hash":  review_hash,
+            "metadata":     {"likes": r.get("likes", 0)}
+        })
+
+    result = (
+        db_client.table("rr_reviews")
+        .upsert(rows, on_conflict="review_hash")
+        .execute()
+    )
+    return result

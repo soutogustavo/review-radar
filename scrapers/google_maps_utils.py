@@ -1,6 +1,7 @@
 """Utils for google maps scraper"""
 
 import re
+import hashlib
 import logging
 from bs4 import BeautifulSoup
 from prefect import task
@@ -50,4 +51,24 @@ def parse_maps_reviews_from_html(html: str) -> list[dict]:
             "_author_hash_only": author,
         })
 
+    logger.info(f"Parsed/extracted {len(results)} reviews")
+
     return results
+
+
+def normalize_date(date_str: str) -> str:
+    """Remove 'Edited' prefix if exists"""
+    return re.sub(r"^[Ee]dited\s+", "", date_str).strip()
+
+
+def generate_review_hash(source_id: str, review: dict) -> str:
+    """
+    Generate hash for a review.
+    Uses source_id + author + normalized_date + rating
+    """
+
+    author = review.get("_author_hash_only", "")
+    normalized_date = normalize_date(review["date"])
+    raw = f"{source_id}|{author}|{normalized_date}|{review['rating']}"
+
+    return hashlib.sha256(raw.encode()).hexdigest()

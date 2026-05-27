@@ -8,7 +8,7 @@ from prefect import flow
 from scrapers.google_maps import scrap_google_maps_reviews
 from scrapers.google_maps_utils import parse_maps_reviews_from_html
 
-from pipeline.db import load_active_sources
+from pipeline.db import load_active_sources, save_google_maps_reviews
 from pipeline.models import ClientSource
 from pipeline.tasks import save_run
 
@@ -19,7 +19,7 @@ logger = logging.getLogger("Pipeline")
 @flow(name="Review Pipeline")
 def review_pipeline(
     client: ClientSource
-):
+) -> None:
     """Review pipeline
 
     Args:
@@ -39,7 +39,16 @@ def review_pipeline(
                 show_console_messages=client.scrape_config.show_console_messages
             )
         )
-        reviews = parse_maps_reviews_from_html(html=scraped_reviews.html)
+
+        reviews = parse_maps_reviews_from_html(
+            html=scraped_reviews.html
+        )
+
+        save_google_maps_reviews(
+            reviews=reviews,
+            source_id=client.source_id,
+            client_id=client.client_id
+        )
 
     save_run(
         run=client,
@@ -57,10 +66,4 @@ if __name__ == "__main__":
 
     for client in clients:
         logger.info(f"Scraping reviews for client {client.client_name}")
-
-        reviews = review_pipeline(
-            client=client
-        )
-
-        logger.info(f"Scraped {len(reviews)} reviews")
-        logger.info(reviews)
+        review_pipeline(client=client)
