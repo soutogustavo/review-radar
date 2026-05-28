@@ -68,6 +68,6 @@ if __name__ == "__main__":
 
     clients = load_active_sources()
 
-    for client in clients[1:]:
+    for client in clients:
         logger.info(f"Scraping reviews for client {client.client_name}")
         review_pipeline(client=client)

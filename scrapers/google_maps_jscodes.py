@@ -50,6 +50,7 @@ JS_ACCEPT_COOKIES = """
 
 JS_SORT_BY_RECENT = """
 (() => {
+  // --- 1. Find and click the sort button ---
   const sortButton =
     [...document.querySelectorAll('button')].find(b =>
       b.textContent.trim().match(/Most relevant|Mais relevantes|Sort|Ordenar/i)
@@ -65,20 +66,80 @@ JS_SORT_BY_RECENT = """
 
   sortButton.click();
 
+  // --- 2. Wait for menu to open and click "Newest" ---
   const waitForMenu = (attempts = 0) => {
-    // seletor correto: DIV com role="menuitemradio"
     const menuItems = [...document.querySelectorAll('div[role="menuitemradio"]')];
-
     const recentItem = menuItems.find(el =>
       el.textContent.trim().match(/Newest|Most recent/i)
     );
 
     if (recentItem) {
+      const firstReviewBefore = document.querySelector('.jftiEf')?.innerText?.trim() || "";
       recentItem.click();
-      console.log('sort_state: {"status": "sorted"}');
-      setTimeout(() => {
-        document.body.setAttribute("data-sort-ready", "1");
-      }, 3000);
+      console.log('sort_state: {"status": "clicked_newest"}');
+
+      // --- 3. Wait for the reviews to reload ---
+      const waitForReload = (attempts = 0) => {
+        const firstReviewNow = document.querySelector('.jftiEf')?.innerText?.trim() || "";
+        const reloaded = firstReviewNow !== firstReviewBefore && firstReviewNow.length > 0;
+
+        if (reloaded || attempts >= 40) {
+          console.log(`sort_state: {"status": "reloaded", "confirmed": ${reloaded}, "attempts": ${attempts}}`);
+
+          // --- 4. Initial scroll to "wake up" the panel ---
+          const findPanel = () => {
+            // Known selectors for the Google Maps reviews container
+            const candidates = [
+              document.querySelector('.m6QErb.DxyBCb.kA9KIf'),
+              document.querySelector('.m6QErb.DxyBCb'),
+              document.querySelector('.m6QErb[aria-label]'),
+              document.querySelector('div[role="main"] .m6QErb'),
+              // fallback: any scrollable div inside the main panel
+              ...[...document.querySelectorAll('div[role="main"] div')].filter(el => {
+                const s = getComputedStyle(el);
+                return ["auto", "scroll"].includes(s.overflowY) &&
+                      el.scrollHeight > el.clientHeight + 200;
+              })
+            ];
+
+            return candidates.find(el => el != null) || null;
+          };
+
+          const triggerInitialScroll = (attempts = 0) => {
+            const panel = findPanel();
+
+            if (panel) {
+              // Gentle and progressive scroll to force rendering
+              panel.scrollTop = 0;
+              setTimeout(() => { panel.scrollBy(0, 300); }, 200);
+              setTimeout(() => { panel.scrollBy(0, 300); }, 500);
+              setTimeout(() => { panel.scrollBy(0, 300); }, 800);
+              setTimeout(() => { panel.scrollBy(0, 300); }, 1100);
+
+              console.log('sort_state: {"status": "initial_scroll_done"}');
+              setTimeout(() => {
+                document.body.setAttribute("data-sort-ready", "1");
+              }, 2000);  // Wait for rendering after initial scroll
+
+            } else if (attempts < 15) {
+              // Panel not yet available - try again
+              console.log(`sort_state: {"status": "waiting_panel", "attempts": ${attempts}}`);
+              setTimeout(() => triggerInitialScroll(attempts + 1), 300);
+            } else {
+              console.log('sort_state: {"status": "panel_not_found"}');
+              document.body.setAttribute("data-sort-ready", "1");
+            }
+          };
+
+          triggerInitialScroll();
+
+        } else {
+          setTimeout(() => waitForReload(attempts + 1), 200);
+        }
+      };
+
+      waitForReload();
+
     } else if (attempts < 20) {
       setTimeout(() => waitForMenu(attempts + 1), 200);
     } else {
@@ -149,12 +210,12 @@ JS_SCROLL_LOAD = """
     panel.scrollBy(0, 700);
   }
 
-  // Aguarda novos reviews renderizarem antes de sinalizar ready
+  // Wait for new reviews to render before signaling ready
   const waitForNewReviews = (attempts = 0) => {
     const loadedNow = reviewCards().length;
     const newLoaded = loadedNow > loadedBefore;
     const atBottom  = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 50;
-    const maxWait   = 15; // ~3 segundos
+    const maxWait   = 15; // ~3 seconds
 
     if (newLoaded || atBottom || attempts >= maxWait) {
       window.__gm_state = {
@@ -168,7 +229,7 @@ JS_SCROLL_LOAD = """
       console.log("gm_state", JSON.stringify(window.__gm_state));
       document.body.setAttribute("data-crawl-ready", "1");
     } else {
-      setTimeout(() => waitForNewReviews(attempts + 1), 200); // checa a cada 200ms
+      setTimeout(() => waitForNewReviews(attempts + 1), 200); // Check every 200ms
     }
   };
 
