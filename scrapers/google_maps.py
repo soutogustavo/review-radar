@@ -11,6 +11,7 @@ from crawl4ai import (
 from prefect import task
 from scrapers.google_maps_jscodes import (
     JS_ACCEPT_COOKIES,
+    JS_SORT_BY_RECENT,
     JS_SCROLL_LOAD
 )
 from scrapers.google_maps_utils import parse_maps_reviews_from_html
@@ -39,7 +40,7 @@ async def scrap_google_maps_reviews(
 
     browser_config = BrowserConfig(
         browser_type="chromium",
-        headless=headless,
+        headless=False, #headless,
         verbose=False,
         java_script_enabled=True,
     )
@@ -54,11 +55,20 @@ async def scrap_google_maps_reviews(
         )
         await crawler.arun(url=url, config=accept_config)
 
+        sort_config = CrawlerRunConfig(
+            cache_mode=CacheMode.BYPASS,
+            session_id="maps",
+            js_code=JS_SORT_BY_RECENT,
+            wait_for='js:() => document.body.getAttribute("data-sort-ready") === "1"',
+            delay_before_return_html=5,
+            js_only=True,
+        )
+        await crawler.arun(url=url, config=sort_config)
 
         logger.info("Scrolling to load all reviews...")
         stable_rounds = 0
         last_loaded = -1
-        max_stable_rounds = 4
+        max_stable_rounds = 5
 
         while True:
             result = await crawler.arun(
@@ -89,12 +99,16 @@ async def scrap_google_maps_reviews(
             if stable_rounds >= max_stable_rounds:
                 break
 
-        if show_console_messages:
-
-            if result.success and result.console_messages:
+            if result.console_messages:
                 for msg in result.console_messages:
-                    if msg.get("type") == "error":
-                        logger.info(f"Console Error: {msg.get('text')}")
+                    if "gm_state" in msg.get("text", ""):
+                        logger.info(f"JS state: {msg.get('text')}")
+
+            '''if show_console_messages:
+                if result.success and result.console_messages:
+                    for msg in result.console_messages:
+                        if msg.get("type") == "error":
+                            logger.info(f"Console Error: {msg.get('text')}")'''
 
     logger.info("Scraping finished.")
 

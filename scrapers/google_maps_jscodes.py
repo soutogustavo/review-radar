@@ -48,79 +48,47 @@ JS_ACCEPT_COOKIES = """
     })();
 """
 
-JS_SCROLL_LOAD_OLD = """
-// 1. Accept cookies (unchanged)
+JS_SORT_BY_RECENT = """
 (() => {
-  function clickAcceptAll() {
-    const btn = document.querySelector('button[aria-label=\"Accept all\"]') ||
-                document.querySelector('button[jsname=\"b3VHJd\"]');
-    if (btn) { btn.click(); return true; }
+  const sortButton =
+    [...document.querySelectorAll('button')].find(b =>
+      b.textContent.trim().match(/Most relevant|Mais relevantes|Sort|Ordenar/i)
+    ) ||
+    document.querySelector('button[aria-label*="Sort"]') ||
+    document.querySelector('button[aria-label*="sort"]');
 
-    const iframes = document.querySelectorAll('iframe');
-    for (const frame of iframes) {
-      try {
-        const doc = frame.contentDocument || frame.contentWindow?.document;
-        if (!doc) continue;
-        const iframeBtn = doc.querySelector('button[aria-label=\"Accept all\"]') ||
-                          doc.querySelector('button[jsname=\"b3VHJd\"]');
-        if (iframeBtn) { iframeBtn.click(); return true; }
-      } catch (e) {}
-    }
-    return false;
-  }
-  clickAcceptAll();
-})();
-
-// 2. Dynamic infinite scroll - stops when no new reviews
-setTimeout(() => {
-  function getReviewCount() {
-    return document.querySelectorAll('[data-review-id], [data-result-index], .jftiEf').length;
+  if (!sortButton) {
+    console.log('sort_state: {"status": "button_not_found"}');
+    document.body.setAttribute("data-sort-ready", "1");
+    return;
   }
 
-  function scrollReviews() {
-    const panel = document.querySelector('[role=\"main\"] section') ||
-                  document.querySelector('.m6QErb.DxyBCb') ||
-                  document.querySelector('[data-result-index]')?.closest('section') ||
-                  document.querySelector('.section-result');
+  sortButton.click();
 
-    if (!panel || panel.scrollHeight <= panel.clientHeight + 1) {
-      return false;  // No more scrollable content
-    }
+  const waitForMenu = (attempts = 0) => {
+    // seletor correto: DIV com role="menuitemradio"
+    const menuItems = [...document.querySelectorAll('div[role="menuitemradio"]')];
 
-    panel.scrollTop = panel.scrollHeight;
-    return true;
-  }
+    const recentItem = menuItems.find(el =>
+      el.textContent.trim().match(/Newest|Most recent/i)
+    );
 
-  let prevCount = 0;
-  let noChangeCount = 0;
-  const maxNoChange = 3;  // Stop after 3 scrolls with no new reviews
-  const maxTotalScrolls = 50;  // Safety limit (~100 reviews)
-
-  const scrollLoop = async () => {
-    let scrolls = 0;
-    while (scrolls < maxTotalScrolls) {
-      const scrolled = scrollReviews();
-      await new Promise(r => setTimeout(r, 1500));  // Wait for load
-
-      const currentCount = getReviewCount();
-      if (currentCount === prevCount) {
-        noChangeCount++;
-        if (noChangeCount >= maxNoChange) {
-          console.log(`Stopped: No new reviews after ${scrolls} scrolls (${currentCount} total)`);
-          break;
-        }
-      } else {
-        noChangeCount = 0;  // Reset on new content
-        console.log(`New reviews: ${currentCount - prevCount} (total: ${currentCount})`);
-      }
-
-      prevCount = currentCount;
-      scrolls++;
+    if (recentItem) {
+      recentItem.click();
+      console.log('sort_state: {"status": "sorted"}');
+      setTimeout(() => {
+        document.body.setAttribute("data-sort-ready", "1");
+      }, 3000);
+    } else if (attempts < 20) {
+      setTimeout(() => waitForMenu(attempts + 1), 200);
+    } else {
+      console.log('sort_state: {"status": "menu_item_not_found"}');
+      document.body.setAttribute("data-sort-ready", "1");
     }
   };
 
-  scrollLoop();
-}, 3000);
+  waitForMenu();
+})();
 """
 
 
@@ -154,7 +122,6 @@ JS_SCROLL_LOAD = """
     const texts = [...document.querySelectorAll("button, div, span, h1, h2, h3, h4")]
       .map(el => (el.innerText || "").trim())
       .filter(Boolean);
-
     for (const t of texts) {
       const m = t.match(/([\\d.,]+)\\s+reviews?/i);
       if (m) {
@@ -166,38 +133,45 @@ JS_SCROLL_LOAD = """
   }
 
   const panel = findPanel();
-  const loaded = reviewCards().length;
+  const loadedBefore = reviewCards().length;
   const total = parseTotalReviews();
 
   if (!panel) {
-    window.__gm_state = {
-      status: "no-panel",
-      loaded,
-      total,
-      height: null
-    };
+    window.__gm_state = { status: "no-panel", loaded: loadedBefore, total };
     document.body.setAttribute("data-crawl-ready", "1");
     return;
   }
 
+  // Scrolla
   panel.click();
   panel.focus();
-  panel.style.outline = "3px solid red";
-
   for (let i = 0; i < 6; i++) {
     panel.scrollBy(0, 700);
   }
 
-  window.__gm_state = {
-    status: "ok",
-    loaded_before: loaded,
-    loaded_after: reviewCards().length,
-    total,
-    height: panel.scrollHeight,
-    top: panel.scrollTop
+  // Aguarda novos reviews renderizarem antes de sinalizar ready
+  const waitForNewReviews = (attempts = 0) => {
+    const loadedNow = reviewCards().length;
+    const newLoaded = loadedNow > loadedBefore;
+    const atBottom  = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 50;
+    const maxWait   = 15; // ~3 segundos
+
+    if (newLoaded || atBottom || attempts >= maxWait) {
+      window.__gm_state = {
+        status:        "ok",
+        loaded_before: loadedBefore,
+        loaded_after:  loadedNow,
+        new_reviews:   loadedNow - loadedBefore,
+        at_bottom:     atBottom,
+        total,
+      };
+      console.log("gm_state", JSON.stringify(window.__gm_state));
+      document.body.setAttribute("data-crawl-ready", "1");
+    } else {
+      setTimeout(() => waitForNewReviews(attempts + 1), 200); // checa a cada 200ms
+    }
   };
 
-  console.log("gm_state", JSON.stringify(window.__gm_state));
-  document.body.setAttribute("data-crawl-ready", "1");
+  waitForNewReviews();
 })();
 """

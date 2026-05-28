@@ -6,7 +6,7 @@ from datetime import datetime
 from prefect import flow
 
 from scrapers.google_maps import scrap_google_maps_reviews
-from scrapers.google_maps_utils import parse_maps_reviews_from_html
+from scrapers.google_maps_utils import parse_maps_reviews_from_html, deduplicate_reviews
 
 from pipeline.db import load_active_sources, save_google_maps_reviews
 from pipeline.models import ClientSource
@@ -45,6 +45,9 @@ def review_pipeline(
             source_id=client.source_id,
         )
 
+        reviews = deduplicate_reviews(reviews)
+        logger.info(f"After dedup: {len(reviews)} unique reviews")
+
         save_google_maps_reviews(
             reviews=reviews,
             source_id=client.source_id,
@@ -65,6 +68,6 @@ if __name__ == "__main__":
 
     clients = load_active_sources()
 
-    for client in clients:
+    for client in clients[1:]:
         logger.info(f"Scraping reviews for client {client.client_name}")
         review_pipeline(client=client)
